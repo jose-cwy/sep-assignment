@@ -97,6 +97,21 @@ document.write('\
                     <li>\
                         <a id="retailLink">Retail</a>\
                     </li>\
+                    \
+                    <li class="dropdown">\
+                        <a class="dropdown-toggle" href="#">\
+                            Showroom<i class="icon icon-angle-down"></i>\
+                        </a>\
+                    <ul class="dropdown-menu">\
+                    <li><a href="/B/' + countryPrefix + '/showroom.html?room=living"><i class="icon icon-map-marker"></i> Living Room</a></li>\
+                    <li><a href="/B/' + countryPrefix + '/showroom.html?room=bedroom"><i class="icon icon-map-marker"></i> Bedroom</a></li>\
+                    <li><a href="/B/' + countryPrefix + '/showroom.html?room=studyroom"><i class="icon icon-map-marker"></i> Studyroom</a></li>\
+                    <li><a href="/B/' + countryPrefix + '/showroom.html?room=kitchen"><i class="icon icon-map-marker"></i> Kitchen</a></li>\
+                    <li><a href="/B/' + countryPrefix + '/showroom.html?room=bathroom"><i class="icon icon-map-marker"></i> Bathroom</a></li>\
+                    <li><a href="/B/' + countryPrefix + '/showroom.html?room=garden"><i class="icon icon-map-marker"></i> Garden</a></li>\
+                    </ul>\
+                    </li>\
+                    \
                     <li class="dropdown">\
                         <a class="dropdown-toggle" href="#">\
                             Furniture<i class="icon icon-angle-down"></i>\

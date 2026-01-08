@@ -1,0 +1,328 @@
+<script src="../checkCountry.js"></script>
+<html>
+
+<head>
+    <title>Showroom</title>
+    <script src="../../header.js"></script>
+
+    <style>
+        .showroom-wrap {
+            position: relative;
+        }
+
+        /* ===== HERO (make subtitle more visible + red line sits at bottom of black box) ===== */
+        .page-top {
+            background: #111;
+            /* force black hero */
+            padding: 60px 0 40px;
+            /* reduce bottom padding so content sits higher */
+            margin-bottom: 0;
+        }
+
+        .page-top h2 {
+            color: #fff;
+            margin-bottom: 10px;
+        }
+
+        .showroom-sub {
+            color: #f2f2f2;
+            /* brighter subtitle */
+            font-size: 16px;
+            margin-top: 6px;
+            margin-bottom: 0;
+            opacity: 0.95;
+        }
+
+        /* red line directly under black box */
+        .hero-divider {
+            height: 4px;
+            width: 220px;
+            background: #b44435;
+            margin: 18px 0 0 0;
+            /* left aligned under text */
+        }
+
+        /* ================================================================================ */
+
+        .showroom-stage {
+            position: relative;
+            width: 100%;
+            max-width: 950px;
+            height: 600px;
+            margin: 0 auto 0 0;
+            /* shift left */
+            border-radius: 12px;
+            overflow: hidden;
+            background: #eee;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, .1);
+        }
+
+        .showroom-stage img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        /* hotspots */
+        .hotspot {
+            position: absolute;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, .95);
+            border: 2px solid #c0392b;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            user-select: none;
+            box-shadow: 0 6px 16px rgba(0, 0, 0, .18);
+            transform: translate(-50%, -50%);
+            font-weight: 700;
+            color: #c0392b;
+        }
+
+        .hotspot:hover {
+            background: #fff;
+        }
+
+        /* right detail drawer */
+        .drawer {
+            position: fixed;
+            top: 0;
+            right: -420px;
+            width: 420px;
+            height: 100%;
+            background: #fff;
+            box-shadow: -6px 0 18px rgba(0, 0, 0, .16);
+            transition: right .25s ease;
+            z-index: 9999;
+            padding: 18px;
+            overflow-y: auto;
+        }
+
+        .drawer.open {
+            right: 0;
+        }
+
+        .drawer-close {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            border: none;
+            background: #eee;
+            cursor: pointer;
+        }
+
+        .drawer-img {
+            width: 100%;
+            border-radius: 12px;
+            background: #f5f5f5;
+            padding: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 240px;
+        }
+
+        .drawer-img img {
+            max-width: 100%;
+            max-height: 280px;
+        }
+
+        .drawer-title {
+            margin-top: 14px;
+            font-size: 22px;
+            font-weight: 800;
+        }
+
+        .drawer-price {
+            margin-top: 4px;
+            font-size: 18px;
+            font-weight: 800;
+            color: #c0392b;
+        }
+
+        .drawer-box {
+            margin-top: 16px;
+            background: #f6f6f6;
+            border-radius: 12px;
+            padding: 14px;
+        }
+
+        .drawer-box h4 {
+            margin: 0 0 8px 0;
+            font-weight: 800;
+        }
+
+        .drawer-box ul {
+            margin: 0;
+            padding-left: 18px;
+        }
+
+        .drawer-actions {
+            margin-top: 16px;
+        }
+
+        .drawer-actions .btn {
+            width: 100%;
+            padding: 14px;
+            font-weight: 800;
+        }
+
+        /* page spacing */
+        .showroom-header {
+            margin-bottom: 18px;
+        }
+    </style>
+</head>
+
+<body>
+    <script src="menu2.js"></script>
+
+    <div class="body">
+        <div role="main" class="main">
+            <section class="page-top">
+                <div class="container">
+                    <div class="row">
+                        <div class="col-md-12">
+                            <h2 id="roomTitle">Showroom</h2>
+                            <p class="showroom-sub" id="roomSubtitle">Hover/click items in the room to view details.</p>
+                            <div class="hero-divider"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <div class="container showroom-header">
+                <hr class="tall">
+            </div>
+
+            <div class="container showroom-wrap">
+                <div class="showroom-stage">
+                    <img id="roomImg" src="" alt="Showroom">
+                    <div id="hotspots"></div>
+                </div>
+
+                <hr class="tall">
+
+                <div class="panel panel-default">
+                    <div class="panel-heading"><strong>About this Showroom</strong></div>
+                    <div class="panel-body" id="aboutRoom">
+                        This virtual showroom displays curated furniture and fixtures. Click a numbered marker to view
+                        item details.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right drawer -->
+    <div id="drawer" class="drawer" aria-hidden="true">
+        <button class="drawer-close" onclick="closeDrawer()">x</button>
+
+        <div class="drawer-img">
+            <img id="drawerImg" src="" alt="">
+        </div>
+
+        <div class="drawer-title" id="drawerName"></div>
+        <div class="drawer-price" id="drawerPrice"></div>
+
+        <div class="drawer-box">
+            <h4>Dimension:</h4>
+            <ul>
+                <li>Length: <span id="dimL"></span></li>
+                <li>Width: <span id="dimW"></span></li>
+                <li>Height: <span id="dimH"></span></li>
+            </ul>
+        </div>
+
+        <div class="drawer-actions">
+            <button class="btn btn-default" onclick="viewProduct()">View Product</button>
+            <button class="btn btn-primary" onclick="addToCart()">Add to Cart</button>
+        </div>
+    </div>
+
+    <!-- Showroom data -->
+    <script src="showroomData.js"></script>
+
+    <script>
+        var currentItem = null;
+
+        function openDrawer(item) {
+            currentItem = item;
+
+            document.getElementById("drawerImg").src = item.img;
+            document.getElementById("drawerName").innerText = item.name;
+            document.getElementById("drawerPrice").innerText = "$" + item.price;
+
+            document.getElementById("dimL").innerText = item.dim.length;
+            document.getElementById("dimW").innerText = item.dim.width;
+            document.getElementById("dimH").innerText = item.dim.height;
+
+            document.getElementById("drawer").classList.add("open");
+            document.getElementById("drawer").setAttribute("aria-hidden", "false");
+        }
+
+        function closeDrawer() {
+            document.getElementById("drawer").classList.remove("open");
+            document.getElementById("drawer").setAttribute("aria-hidden", "true");
+        }
+
+        function addToCart() {
+            alert("Please log in first to add items to cart.");
+
+            var countryPrefix = localStorage.getItem("urlPrefix") || "SG";
+            window.location.href = "/B/" + countryPrefix + "/memberLogin.html";
+        }
+
+        function viewProduct() {
+            if (!currentItem || !currentItem.sku) return;
+
+            var countryPrefix = localStorage.getItem("urlPrefix") || "SG";
+
+            window.location.href =
+                "/B/" + countryPrefix +
+                "/furnitureProductDetails.html?sku=" +
+                encodeURIComponent(currentItem.sku);
+        }
+
+        document.addEventListener("DOMContentLoaded", function () {
+            var url = new URL(window.location.href);
+            var roomKey = (url.searchParams.get("room") || "kitchen").toLowerCase();
+            if (!SHOWROOM_DATA[roomKey]) roomKey = "kitchen";
+
+            var room = SHOWROOM_DATA[roomKey];
+
+            document.getElementById("roomTitle").innerText = room.title;
+            document.getElementById("roomSubtitle").innerText = room.subtitle;
+            document.getElementById("aboutRoom").innerText = room.about;
+
+            document.getElementById("roomImg").src = room.background;
+
+            // render hotspots
+            var hs = document.getElementById("hotspots");
+            hs.innerHTML = "";
+
+            for (var i = 0; i < room.items.length; i++) {
+                (function (item) {
+                    var btn = document.createElement("div");
+                    btn.className = "hotspot";
+                    btn.innerText = item.marker;
+                    btn.style.left = item.pos.x + "%";
+                    btn.style.top = item.pos.y + "%";
+                    btn.onclick = function () { openDrawer(item); };
+                    hs.appendChild(btn);
+                })(room.items[i]);
+            }
+        });
+    </script>
+
+    <script src="../footer.js"></script>
+</body>
+
+</html>

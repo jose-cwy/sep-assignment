@@ -1,9 +1,49 @@
 <script src="../checkCountry.js"></script>
 <html>
+
 <head>
   <title>Promotions</title>
   <script src="../../header.js"></script>
 </head>
+
+<style>
+  .promo-grid{
+    display:flex;
+    flex-wrap:wrap;
+    justify-content:center; 
+    padding-left:0;
+    margin-left:-3%;
+  }
+
+  .promo-grid > li{
+    float:none !important;
+    display:flex;
+  }
+
+  .promo-grid .product-thumb-info{
+    width:100%;
+    display:flex;
+    flex-direction:column;
+    height:100%;
+  }
+
+  .promo-grid .product-thumb-info-image img{
+    width:100%;
+    height:160px;   
+    object-fit:cover;
+    display:block;
+  }
+
+  .promo-grid .product-thumb-info-content{
+    display:flex;
+    flex-direction:column;
+    flex:1;
+  }
+
+  .promo-grid .product-thumb-info-content .btn{
+    margin-top:auto;
+  }
+</style>
 
 <body>
   <script src="menu2.js"></script>
@@ -22,11 +62,27 @@
       </section>
 
       <div class="container">
+
+        <!-- TOP PROMOS (20% and 30%) -->
         <div class="row">
-          <ul id="promotionDisplay"
-              class="products product-thumb-info-list"
-              style="list-style-type:none; margin-left:-3%;"
-              data-plugin-masonry></ul>
+          <div class="col-md-12">
+            <h3 style="margin-top:10px;">Top Promotions</h3>
+            <hr class="tall" style="margin:10px 0 15px;">
+          </div>
+
+          <ul id="topPromotionDisplay" class="products product-thumb-info-list promo-grid"
+            style="list-style-type:none; margin-left:-3%;"></ul>
+        </div>
+
+        <!-- OTHER PROMOS (10%) -->
+        <div class="row" style="margin-top:30px;">
+          <div class="col-md-12">
+            <h3>Other Promotions</h3>
+            <hr class="tall" style="margin:10px 0 15px;">
+          </div>
+
+          <ul id="otherPromotionDisplay" class="products product-thumb-info-list promo-grid"
+            style="list-style-type:none; margin-left:-3%;"></ul>
         </div>
         <hr class="tall">
       </div>
@@ -35,98 +91,89 @@
   </div>
 
   <script>
-  document.addEventListener("DOMContentLoaded", function () {
-    var countryPrefix = localStorage.getItem("urlPrefix");
-    var countryId = localStorage.getItem("countryId");
-    var promotionList = document.getElementById("promotionDisplay");
+document.addEventListener("DOMContentLoaded", function () {
+  var countryPrefix = localStorage.getItem("urlPrefix");
+  var countryId = localStorage.getItem("countryId");
 
-    var memberEmail = sessionStorage.getItem("memberEmail");
-    var menuOut = document.getElementById("menuLoggedOut");
-    var menuIn = document.getElementById("menuLoggedIn");
+  var topList = document.getElementById("topPromotionDisplay");
+  var otherList = document.getElementById("otherPromotionDisplay");
 
-    if (menuOut && menuIn) {
-      if (memberEmail == null || memberEmail === "") {
-        menuOut.style.display = "block";
-        menuIn.style.display = "none";
-      } else {
-        menuOut.style.display = "none";
-        menuIn.style.display = "block";
+  function toPromoImg(rawImg) {
+    if (!rawImg) return "../../img/promotions/F_CH_73.jpg";
+    var filename = rawImg.toString().split("/").pop();
+    return "../../img/promotions/" + filename;
+  }
 
-        var welcomeText = sessionStorage.getItem("memberName");
-        if (welcomeText === "null") welcomeText = "";
+  function renderPromo(promo) {
+    var id = promo.id || promo.ID;
+    var desc = promo.description || promo.DESCRIPTION || "";
+    var rate = promo.discountRate || promo.DISCOUNTRATE || "";
+    var start = (promo.startDate || promo.STARTDATE || "").toString().substring(0, 10);
+    var end = (promo.endDate || promo.ENDDATE || "").toString().substring(0, 10);
+    var img = toPromoImg(promo.imageURL || promo.IMAGEURL);
 
-        var memberNameEl = document.getElementById("memberName");
-        if (memberNameEl) memberNameEl.innerHTML = "Welcome " + welcomeText + "!";
+    var detailsUrl = "/B/" + countryPrefix + "/promotionDetails.html?id=" + encodeURIComponent(id);
+
+    return `
+      <li class="col-md-3 col-sm-6 col-xs-12 product" style="padding-bottom:1%; padding-top:2%;">
+        <span class="product-thumb-info">
+          <span class="product-thumb-info-image">
+            <a href="${detailsUrl}">
+              <img class="img-responsive" src="${img}" alt="">
+            </a>
+          </span>
+          <span class="product-thumb-info-content">
+            <h4>${desc}</h4>
+            <em>${rate}% OFF</em><br/>
+            <em>${start} → ${end}</em><br/><br/>
+            <a href="${detailsUrl}" class="btn btn-primary btn-block">More Details</a>
+          </span>
+        </span>
+      </li>
+    `;
+  }
+
+  fetch("/api/getPromotionsByCountry?countryId=" + encodeURIComponent(countryId))
+    .then(res => res.json())
+    .then(data => {
+
+      if (!data || data.length === 0) {
+        topList.innerHTML = "<p>No promotions available.</p>";
+        otherList.innerHTML = "<p>No other promotions.</p>";
+        return;
       }
-    }
 
-    if (!promotionList) return;
+      var topHTML = "";
+      var otherHTML = "";
 
-    function toPromoImg(rawImg) {
-      if (!rawImg) return "../../img/promotions/F_CH_73.jpg";
-      var filename = rawImg.toString().split("/").pop();
-      return "../../img/promotions/" + filename;
-    }
+      data.forEach(function (promo) {
+        var desc = (promo.description || promo.DESCRIPTION || "").toLowerCase();
 
-    fetch("/api/getPromotionsByCountry?countryId=" + encodeURIComponent(countryId))
-      .then(function (res) { return res.json(); })
-      .then(function (data) {
-
-        if (!data || data.length === 0) {
-          promotionList.innerHTML =
-            '<p style="padding:10px;">No promotions available at the moment.</p>';
-          return;
+        if (
+          desc.includes("january") ||
+          desc.includes("new year")
+        ) {
+          topHTML += renderPromo(promo);
         }
-
-        var htmlTxt = "";
-
-        data.forEach(function (promo) {
-          var id = promo.id || promo.ID;
-          var desc = promo.description || promo.DESCRIPTION || "";
-          var rate = promo.discountRate || promo.DISCOUNTRATE || "";
-          var start = (promo.startDate || promo.STARTDATE || "").toString().substring(0, 10);
-          var end = (promo.endDate || promo.ENDDATE || "").toString().substring(0, 10);
-
-          var rawImg = promo.imageURL || promo.IMAGEURL || "";
-          var img = toPromoImg(rawImg);
-
-          var detailsUrl = "/B/" + countryPrefix + "/promotionDetails.html?id=" + encodeURIComponent(id);
-
-          htmlTxt += '\
-            <li class="col-md-3 col-sm-6 col-xs-12 product" style="padding-bottom:1%; padding-top:2%;">\
-              <span class="product-thumb-info">\
-                <span class="product-thumb-info-image">\
-                  <span class="product-thumb-info-act">\
-                    <span class="product-thumb-info-act-left">\
-                      <a href="' + detailsUrl + '" style="color:white;"><em>View Details</em></a>\
-                    </span>\
-                  </span>\
-                  <a href="' + detailsUrl + '">\
-                    <img class="img-responsive" src="' + img + '" alt="">\
-                  </a>\
-                </span>\
-                <span class="product-thumb-info-content">\
-                  <h4>' + desc + '</h4>\
-                  <span class="product-thumb-info-act-left">\
-                    <em>' + rate + '% OFF</em><br/>\
-                    <em>' + start + ' → ' + end + '</em>\
-                  </span><br/>\
-                  <a href="' + detailsUrl + '" class="btn btn-primary btn-block">More Details</a>\
-                </span>\
-              </span>\
-            </li>';
-        });
-
-        promotionList.innerHTML = htmlTxt;
-      })
-      .catch(function (err) {
-        console.log(err);
-        promotionList.innerHTML =
-          '<p style="padding:10px;">Unable to load promotions. Please try again.</p>';
+        else if (
+          desc.includes("annivasary")
+        ) {
+          otherHTML += renderPromo(promo);
+        }
       });
-  });
-  </script>
 
-  <script src="../footer.js"></script>
+      topList.innerHTML = topHTML || "<p>No top promotions.</p>";
+      otherList.innerHTML = otherHTML || "<p>No other promotions right now.</p>";
+    })
+    .catch(err => {
+      console.error(err);
+      topList.innerHTML = "<p>Error loading promotions.</p>";
+      otherList.innerHTML = "";
+    });
+});
+</script>
+
+<script src="../footer.js"></script>
 </body>
+
 </html>
