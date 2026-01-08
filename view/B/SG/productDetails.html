@@ -1,0 +1,208 @@
+<script src="../checkCountry.js"></script>
+<html>
+
+<head>
+  <title>Product Details</title>
+  <script src="../../header.js"></script>
+</head>
+
+<body>
+  <script src="menu2.js"></script>
+
+  <div class="body">
+    <div role="main" class="main">
+
+      <section class="page-top">
+        <div class="container">
+          <div class="row">
+            <div class="col-md-12">
+              <h2>Product Details</h2>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div class="container">
+        <hr class="tall">
+
+        <div class="row">
+          <!-- LEFT: Image -->
+          <div class="col-md-6">
+            <div class="thumbnail">
+              <img alt="" class="img-responsive img-rounded" id="productImg">
+            </div>
+          </div>
+
+          <!-- RIGHT: Details -->
+          <div class="col-md-6">
+            <div class="summary entry-summary">
+              <h2 class="shorter"><strong id="productName"></strong></h2>
+              <p class="price">
+              <h4 class="amount" id="productPrice"></h4>
+              </p>
+
+              <strong>Description</strong>
+              <p class="taller" id="productDesc"></p>
+
+              <div class="product_meta">
+                <span class="posted_in">Category: <span id="productCategory"></span></span>
+              </div>
+
+              <br /><br />
+
+              <div class="row">
+                <div class="col-md-5">
+                  <form onsubmit="return false;">
+                    View Item Availability<br />
+                    <select style="color:black;" name="storeID" id="storeID"></select><br /><br />
+                    <input type="submit" onclick="CheckItemAvail()" class="btn btn-primary btn-icon"
+                      value="Check Item Availability" />
+                  </form>
+                </div>
+
+                <div class="col-md-7" id="quantityDiv"></div>
+              </div>
+
+              <br />
+              <a class="btn btn-default" href="promotions.html">Back</a>
+            </div>
+          </div>
+        </div>
+
+        <hr class="tall">
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      var countryId = localStorage.getItem('countryId');
+      var currentUrl = new URL(window.location.href);
+
+      // Promotion uses ITEM_ID (itementity.ID)
+      var itemId = currentUrl.searchParams.get("id") || currentUrl.searchParams.get("itemId");
+      var promoId = currentUrl.searchParams.get("promoId"); // promotion id for image fallback
+
+      if (!itemId) {
+        document.getElementById("quantityDiv").innerHTML =
+          '<p style="color:red;">No item selected.</p>';
+        return;
+      }
+
+      function promoImgToLocalPath(rawImg) {
+        if (!rawImg) return "";
+        var filename = rawImg.toString().split("/").pop();
+        return "../../img/promotions/" + filename;
+      }
+
+      // build store dropdown
+      var storesInCountry = JSON.parse(localStorage.getItem('storesInCountry')) || [];
+      var storeID = currentUrl.searchParams.get("storeID");
+
+      var selectOptions = '<option></option>';
+      for (var i = 0; i < storesInCountry.length; i++) {
+        var store = storesInCountry[i];
+        if (String(store.id) === String(storeID)) {
+          selectOptions += '<option selected value="' + store.id + '">' + store.name + '</option>';
+        } else {
+          selectOptions += '<option value="' + store.id + '">' + store.name + '</option>';
+        }
+      }
+      document.getElementById("storeID").innerHTML = selectOptions;
+
+      // load item details
+      fetch('/api/getItemById?id=' + encodeURIComponent(itemId) + '&countryId=' + encodeURIComponent(countryId), {
+        method: 'GET'
+      })
+        .then(async function (res) {
+          if (!res.ok) {
+            let msg = '';
+            try { msg = await res.text(); } catch (e) { }
+            throw new Error(msg || ('HTTP ' + res.status));
+          }
+          return res.json();
+        })
+        .then(function (item) {
+
+          // ✅ IMAGE LOGIC:
+          // Use item.imageURL if available.
+          // Otherwise fallback to promotion image if promoId exists.
+          var itemImg = item.imageURL;
+
+          if (itemImg && itemImg !== "") {
+            document.getElementById("productImg").src = itemImg;
+          } else if (promoId) {
+            fetch('/api/getPromotionById?id=' + encodeURIComponent(promoId), { method: 'GET' })
+              .then(function (r) { return r.json(); })
+              .then(function (p) {
+                var promoRawImg = (p && (p.imageURL || p.IMAGEURL)) ? (p.imageURL || p.IMAGEURL) : "";
+                var promoImg = promoImgToLocalPath(promoRawImg);
+                document.getElementById("productImg").src = promoImg || "../../img/products/default.jpg";
+              })
+              .catch(function () {
+                document.getElementById("productImg").src = "../../img/products/default.jpg";
+              });
+          } else {
+            document.getElementById("productImg").src = "../../img/products/default.jpg";
+          }
+
+          // details
+          document.getElementById("productName").innerText = item.name || "";
+          document.getElementById("productDesc").innerText = item.description || "";
+          document.getElementById("productCategory").innerText = item.category || "";
+
+          if (item.price != null && item.price !== "") {
+            document.getElementById("productPrice").innerText = "$" + item.price;
+          } else {
+            document.getElementById("productPrice").innerText = "";
+          }
+
+          // show qty if present
+          var itemQty = currentUrl.searchParams.get("itemQty");
+          if (itemQty != null) {
+            var qty = parseInt(itemQty, 10);
+            var html = '';
+            html += 'Status: ' + (qty > 0 ? 'Available' : 'Unavailable');
+            html += '<br/>Remaining Qty: ' + qty;
+            document.getElementById("quantityDiv").innerHTML = html;
+          }
+        })
+        .catch(function (err) {
+          console.log(err);
+          document.getElementById("quantityDiv").innerHTML =
+            '<p style="color:red;">' + (err.message || "Unable to load product details.") + '</p>';
+        });
+
+      // availability check (kept same as your existing style)
+      window.CheckItemAvail = function () {
+        var storeId = document.getElementById("storeID").value;
+        if (!storeId) return;
+
+        // NOTE: your existing API is named getItemQuantity and expects "sku" param.
+        // In your codebase, you previously passed sku, but promos store ITEM_ID.
+        // If your API actually expects ITEM_ID, this works. If it expects SKU, tell me and I’ll fix it properly.
+        fetch('/api/getItemQuantity?sku=' + encodeURIComponent(itemId) + '&storeId=' + encodeURIComponent(storeId), {
+          method: 'GET'
+        })
+          .then(function (res) { return res.json(); })
+          .then(function (data) {
+            var quantity = (data && data[0] && data[0].sum != null) ? data[0].sum : 0;
+            var url = window.location.origin + window.location.pathname;
+            window.location.href = url + '?id=' + encodeURIComponent(itemId)
+              + '&promoId=' + encodeURIComponent(promoId || '')
+              + '&itemQty=' + encodeURIComponent(quantity)
+              + '&storeID=' + encodeURIComponent(storeId);
+          })
+          .catch(function (err) {
+            console.log(err);
+            document.getElementById("quantityDiv").innerHTML =
+              '<p style="color:red;">' + (err.message || err) + '</p>';
+          });
+      };
+    });
+  </script>
+
+  <script src="../footer.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,145 @@
+<script src="../checkCountry.js"></script>
+<html>
+
+<head>
+  <title>Promotion Details</title>
+  <script src="../../header.js"></script>
+</head>
+
+<body>
+  <script src="menu2.js"></script>
+
+  <div class="body">
+    <div role="main" class="main">
+
+      <section class="page-top">
+        <div class="container">
+          <div class="row">
+            <div class="col-md-12">
+              <h2>Promotion Details</h2>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div class="container">
+        <div class="row">
+          <div class="col-md-12">
+            <div id="promoBox" class="featured-box featured-box-primary">
+              <div class="box-content" style="padding:20px;">
+                <h3 id="promoTitle"></h3>
+                <p><strong id="promoDiscount"></strong></p>
+                <p id="promoDates"></p>
+                <img id="promoImg" class="img-responsive" alt="" style="max-width:500px;">
+                <br /><br />
+                <div id="promoActions"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <hr class="tall">
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+
+      /* ===== FORCE HEADER TOP STRIP (same as promotions.html) ===== */
+      var memberEmail = sessionStorage.getItem("memberEmail");
+      var menuOut = document.getElementById("menuLoggedOut");
+      var menuIn = document.getElementById("menuLoggedIn");
+
+      if (menuOut && menuIn) {
+        if (memberEmail == null || memberEmail === "") {
+          menuOut.style.display = "block";
+          menuIn.style.display = "none";
+        } else {
+          menuOut.style.display = "none";
+          menuIn.style.display = "block";
+
+          var welcomeText = sessionStorage.getItem("memberName");
+          if (welcomeText === "null") welcomeText = "";
+
+          var memberNameEl = document.getElementById("memberName");
+          if (memberNameEl) {
+            memberNameEl.innerHTML = "Welcome " + welcomeText + "!";
+          }
+        }
+      }
+      /* =========================================================== */
+
+      var countryPrefix = localStorage.getItem("urlPrefix");
+
+      function toPromoImg(rawImg) {
+        if (!rawImg) return "../../img/promotions/F_CH_73.jpg";
+        var filename = rawImg.toString().split("/").pop();
+        return "../../img/promotions/" + filename;
+      }
+
+      var currentUrl = new URL(window.location.href);
+      var promoId = currentUrl.searchParams.get("id");
+
+      if (!promoId) {
+        document.getElementById("promoBox").innerHTML =
+          "<p>No promotion selected.</p>";
+        return;
+      }
+
+      fetch("/api/getPromotionById?id=" + encodeURIComponent(promoId))
+        .then(function (res) { return res.json(); })
+        .then(function (promo) {
+          if (!promo) {
+            document.getElementById("promoBox").innerHTML =
+              "<p>Promotion not found.</p>";
+            return;
+          }
+
+          var title = promo.description || promo.DESCRIPTION || "";
+          var rate = promo.discountRate || promo.DISCOUNTRATE || "";
+          var start = (promo.startDate || promo.STARTDATE || "")
+            .toString().substring(0, 10);
+          var end = (promo.endDate || promo.ENDDATE || "")
+            .toString().substring(0, 10);
+
+          var rawImg = promo.imageURL || promo.IMAGEURL || "";
+          var img = toPromoImg(rawImg);
+
+          var itemId = promo.itemId || promo.ITEM_ID;
+
+          var currentUrl = new URL(window.location.href);
+          var promoId = currentUrl.searchParams.get("id"); // promotion id from URL
+
+          var productLink = "";
+          if (itemId) {
+            productLink =
+              '<a class="btn btn-primary" href="/B/' + countryPrefix +
+              '/productDetails.html?id=' + encodeURIComponent(itemId) +
+              '&promoId=' + encodeURIComponent(promoId) +
+              '">View Promoted Item</a>';
+          }
+          
+          document.getElementById("promoTitle").innerText = title;
+          document.getElementById("promoDiscount").innerText = rate + "% OFF";
+          document.getElementById("promoDates").innerText =
+            start + " → " + end;
+          document.getElementById("promoImg").src = img;
+
+          document.getElementById("promoActions").innerHTML =
+            productLink +
+            ' <a class="btn btn-default" href="promotions.html">Back</a>';
+        })
+        .catch(function (err) {
+          console.log(err);
+          document.getElementById("promoBox").innerHTML =
+            "<p>Unable to load promotion details. Please try again.</p>";
+        });
+    });
+  </script>
+
+  <script src="../footer.js"></script>
+</body>
+
+</html>

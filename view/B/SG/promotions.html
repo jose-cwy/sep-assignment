@@ -1,0 +1,132 @@
+<script src="../checkCountry.js"></script>
+<html>
+<head>
+  <title>Promotions</title>
+  <script src="../../header.js"></script>
+</head>
+
+<body>
+  <script src="menu2.js"></script>
+
+  <div class="body">
+    <div role="main" class="main">
+
+      <section class="page-top">
+        <div class="container">
+          <div class="row">
+            <div class="col-md-12">
+              <h2>Promotions</h2>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div class="container">
+        <div class="row">
+          <ul id="promotionDisplay"
+              class="products product-thumb-info-list"
+              style="list-style-type:none; margin-left:-3%;"
+              data-plugin-masonry></ul>
+        </div>
+        <hr class="tall">
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+  document.addEventListener("DOMContentLoaded", function () {
+    var countryPrefix = localStorage.getItem("urlPrefix");
+    var countryId = localStorage.getItem("countryId");
+    var promotionList = document.getElementById("promotionDisplay");
+
+    var memberEmail = sessionStorage.getItem("memberEmail");
+    var menuOut = document.getElementById("menuLoggedOut");
+    var menuIn = document.getElementById("menuLoggedIn");
+
+    if (menuOut && menuIn) {
+      if (memberEmail == null || memberEmail === "") {
+        menuOut.style.display = "block";
+        menuIn.style.display = "none";
+      } else {
+        menuOut.style.display = "none";
+        menuIn.style.display = "block";
+
+        var welcomeText = sessionStorage.getItem("memberName");
+        if (welcomeText === "null") welcomeText = "";
+
+        var memberNameEl = document.getElementById("memberName");
+        if (memberNameEl) memberNameEl.innerHTML = "Welcome " + welcomeText + "!";
+      }
+    }
+
+    if (!promotionList) return;
+
+    function toPromoImg(rawImg) {
+      if (!rawImg) return "../../img/promotions/F_CH_73.jpg";
+      var filename = rawImg.toString().split("/").pop();
+      return "../../img/promotions/" + filename;
+    }
+
+    fetch("/api/getPromotionsByCountry?countryId=" + encodeURIComponent(countryId))
+      .then(function (res) { return res.json(); })
+      .then(function (data) {
+
+        if (!data || data.length === 0) {
+          promotionList.innerHTML =
+            '<p style="padding:10px;">No promotions available at the moment.</p>';
+          return;
+        }
+
+        var htmlTxt = "";
+
+        data.forEach(function (promo) {
+          var id = promo.id || promo.ID;
+          var desc = promo.description || promo.DESCRIPTION || "";
+          var rate = promo.discountRate || promo.DISCOUNTRATE || "";
+          var start = (promo.startDate || promo.STARTDATE || "").toString().substring(0, 10);
+          var end = (promo.endDate || promo.ENDDATE || "").toString().substring(0, 10);
+
+          var rawImg = promo.imageURL || promo.IMAGEURL || "";
+          var img = toPromoImg(rawImg);
+
+          var detailsUrl = "/B/" + countryPrefix + "/promotionDetails.html?id=" + encodeURIComponent(id);
+
+          htmlTxt += '\
+            <li class="col-md-3 col-sm-6 col-xs-12 product" style="padding-bottom:1%; padding-top:2%;">\
+              <span class="product-thumb-info">\
+                <span class="product-thumb-info-image">\
+                  <span class="product-thumb-info-act">\
+                    <span class="product-thumb-info-act-left">\
+                      <a href="' + detailsUrl + '" style="color:white;"><em>View Details</em></a>\
+                    </span>\
+                  </span>\
+                  <a href="' + detailsUrl + '">\
+                    <img class="img-responsive" src="' + img + '" alt="">\
+                  </a>\
+                </span>\
+                <span class="product-thumb-info-content">\
+                  <h4>' + desc + '</h4>\
+                  <span class="product-thumb-info-act-left">\
+                    <em>' + rate + '% OFF</em><br/>\
+                    <em>' + start + ' → ' + end + '</em>\
+                  </span><br/>\
+                  <a href="' + detailsUrl + '" class="btn btn-primary btn-block">More Details</a>\
+                </span>\
+              </span>\
+            </li>';
+        });
+
+        promotionList.innerHTML = htmlTxt;
+      })
+      .catch(function (err) {
+        console.log(err);
+        promotionList.innerHTML =
+          '<p style="padding:10px;">Unable to load promotions. Please try again.</p>';
+      });
+  });
+  </script>
+
+  <script src="../footer.js"></script>
+</body>
+</html>

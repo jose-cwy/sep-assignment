@@ -1,13 +1,14 @@
-var mysql = require('mysql');
+var mysql = require("mysql");
+
 var dbconnect = {
-    getConnection: function () {
-        var conn = mysql.createConnection({
-            host: "localhost",
-            user: "root",
-            password: "JJol9090!!!!",
-            database: "islandfurniture-it07"
-        });
-        return conn;
-    }
+  getConnection: function () {
+    return mysql.createConnection({
+      host: "127.0.0.1",
+      user: "nodeuser",
+      password: "NodePass123!",
+      database: "islandfurniture-it07"
+    });
+  }
 };
-module.exports = dbconnect
+
+module.exports = dbconnect;
