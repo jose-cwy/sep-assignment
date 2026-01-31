@@ -193,15 +193,16 @@ app.put('/api/activateMemberAccount', jsonParser, function (req, res) {
 app.put('/api/updateMember', [middleware.checkToken, jsonParser], function (req, res) {
     member.updateMember(req.body)
         .then((result) => {
-            if(result.success) {
+            if (result && result.success) {
                 member.getMember(req.body.email)
-                    .then((result) => {
-                        res.send(result);
-                    })
+                    .then((result2) => res.send(result2))
                     .catch((err) => {
                         console.log(err);
                         res.status(500).send("Failed to get member");
                     });
+            } else {
+                // ✅ ALWAYS respond
+                res.status(400).send({ success: false, message: "Update failed" });
             }
         })
         .catch((err) => {
@@ -209,6 +210,8 @@ app.put('/api/updateMember', [middleware.checkToken, jsonParser], function (req,
             res.status(500).send("Failed to update member");
         });
 });
+
+
 
 app.put('/api/updateMemberPassword', jsonParser, function (req, res) {
     var email = req.body.email;
