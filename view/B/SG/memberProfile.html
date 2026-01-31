@@ -46,9 +46,26 @@
                 document.getElementById("income").value = member.income;
                 document.getElementById("serviceLevelAgreement").checked = (member.sla == 1);
 
+                // ✅ Always show member details in the form on load
+                document.getElementById("name").value = member.name || "";
+                document.getElementById("email").value = member.email || "";
+                document.getElementById("phone").value = member.phone || "";
+
+                // Your DB field is CITY but your form calls it country
+                document.getElementById("country").value = member.city || member.country || "";
+
+                document.getElementById("address").value = member.address || "";
+                document.getElementById("securityQuestion").value = member.securityQuestion || "1";
+                document.getElementById("securityAnswer").value = member.securityAnswer || "";
+                document.getElementById("age").value = member.age || "";
+                document.getElementById("income").value = member.income || "";
+                document.getElementById("serviceLevelAgreement").checked = (member.sla == 1);
+
+
                 if(member.sla == 1) {
                     document.getElementById("serviceLevelAgreement").checked = true;
                 }
+                
 
                 //Get Bought Items
                 fetch(new Request('/api/getBoughtItem/' + member.id,
@@ -207,11 +224,40 @@
             }
 
             async function submitForm() {
-                var oldPassword = document.getElementById('oldPassword').value;
-                var password = document.getElementById("password").value;
-                var repassword = document.getElementById("repassword").value;
+                var oldPassword = document.getElementById('oldPassword').value.trim();
+                var password = document.getElementById("password").value.trim();
+                var repassword = document.getElementById("repassword").value.trim();
+
+
+               if (oldPassword !== "" && password === "") {
+                alert("New password cannot be empty");
+                return;
+            }
+
+            var wantsChangePassword =
+                oldPassword !== "" || password !== "" || repassword !== "";
+
+            if (wantsChangePassword) {
+                if (oldPassword === "" || password === "" || repassword === "") {
+                    alert("To change password, please fill in Old Password, New Password and Re-enter New Password.");
+                    return;
+                }
+
+                if (password !== repassword) {
+                    alert("Passwords do not match.");
+                    return;
+                }
+
+                if (password.length < 8) {
+                    alert("Password must be at least 8 characters long.");
+                    return;
+                }
+            }
+
+
+
+
                 var ok = true;
-                console.log(oldPassword)
                 if (document.getElementById("profileForm").checkValidity()) {
                     if (oldPassword != "" && password != "" && repassword != "") {
                         var memberData = {
@@ -231,7 +277,7 @@
                             return response.json();
                         }).then(function (data) {
                             if(data.success) {
-                                if (password != repassword) {
+                                if (password !== repassword) {
                                     //Check if password and repassword is the same
                                     document.getElementById("password").style.borderColor = "#E34234";
                                     document.getElementById("repassword").style.borderColor = "#E34234";
@@ -256,18 +302,23 @@
 
                     if(ok) {
                         var data = {
-                            email: document.getElementById("email").value,
-                            name: document.getElementById("name").value,
-                            phone: document.getElementById("phone").value,
-                            country: document.getElementById("country").value,
-                            address: document.getElementById("address").value,
-                            securityQuestion: document.getElementById("securityQuestion").value,
-                            securityAnswer: document.getElementById("securityAnswer").value,
-                            age: document.getElementById("age").value,
-                            income: document.getElementById("income").value,
-                            sla: document.getElementById("serviceLevelAgreement").checked ? 1:0,
-                            password: document.getElementById("password").value
-                        };
+                        email: document.getElementById("email").value,
+                        name: document.getElementById("name").value,
+                        phone: document.getElementById("phone").value,
+                        country: document.getElementById("country").value,
+                        address: document.getElementById("address").value,
+                        securityQuestion: document.getElementById("securityQuestion").value,
+                        securityAnswer: document.getElementById("securityAnswer").value,
+                        age: document.getElementById("age").value,
+                        income: document.getElementById("income").value,
+                        sla: document.getElementById("serviceLevelAgreement").checked ? 1 : 0
+                    };
+
+                        // ✅ only include password if user is changing it
+                        if (oldPassword !== "" || password !== "" || repassword !== "") {
+                            data.password = password;
+                        }
+
                         
                         fetch(new Request('/api/updateMember',
                         {
@@ -280,17 +331,32 @@
                         })).then(function (response) {
                             return response.json();
                         }).then(function (data) {
-                            //update member's info in the session storage
-                            sessionStorage.setItem("member", JSON.stringify(data));
-                            sessionStorage.setItem("memberEmail", data.email);
-                            sessionStorage.setItem("memberName", data.name);
-                            var url = window.location.origin + window.location.pathname;
-                            window.location.href = url + '?goodMsg=Successfully Updated!';
-                        }).catch(function (error) {
-                            console.log(error);
-                            var url = window.location.origin + window.location.pathname;
-                            window.location.href = url + '?errMsg=Unable to Update.';
-                        });
+                        // update session
+                        sessionStorage.setItem("member", JSON.stringify(data));
+                        sessionStorage.setItem("memberEmail", data.email);
+                        sessionStorage.setItem("memberName", data.name);
+
+                        // ✅ update the form immediately (so user sees changes right away)
+                        member = data;
+                        document.getElementById("name").value = member.name || "";
+                        document.getElementById("email").value = member.email || "";
+                        document.getElementById("phone").value = member.phone || "";
+                        document.getElementById("country").value = member.city || member.country || "";
+                        document.getElementById("address").value = member.address || "";
+                        document.getElementById("securityQuestion").value = member.securityQuestion || "1";
+                        document.getElementById("securityAnswer").value = member.securityAnswer || "";
+                        document.getElementById("age").value = member.age || "";
+                        document.getElementById("income").value = member.income || "";
+                        document.getElementById("serviceLevelAgreement").checked = (member.sla == 1);
+
+                        // clear password fields after update
+                        document.getElementById("oldPassword").value = "";
+                        document.getElementById("password").value = "";
+                        document.getElementById("repassword").value = "";
+
+                        alert("Successfully Updated!");
+                    })
+
                     }
                 }
             }
@@ -601,11 +667,13 @@
                                         </div>
                                         <div class="form-group">
                                             <label>Set Challenge Question</label>
-                                            <select id="securityQuestion">
-                                                <option value="1">What is your mother's maiden name?</option>
-                                                <option value="2">What is your first pet's name?</option>
-                                                <option value="3">What is your favourite animal?</option>
+                                            <select id="securityQuestion" class="form-control" required>
+                                            <option value="">-- Select a security question --</option>
+                                            <option value="1">What is your mother’s maiden name?</option>
+                                            <option value="2">What was your first school?</option>
+                                            <option value="3">What is your favourite food?</option>
                                             </select>
+
                                             <input class="form-control" type="text" required="true" id="securityAnswer" />
                                         </div>
                                         <div class="form-group">
